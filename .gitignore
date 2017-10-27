@@ -1,0 +1,13 @@
+.idea/
+/target/
+/.classpath
+/.gitignore
+/.project
+/Finalresults.pdf
+/README.md
+/install.pdf
+/lucene-answer-retrieval.iml
+/pom.xml
+/result-ancapc.run
+/results.docx
+/results.pdf

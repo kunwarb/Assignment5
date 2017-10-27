@@ -1,0 +1,6 @@
+/result-custom.run
+/result-lucene.run
+/tfidf_anc_apc.run
+/tfidf_bnn_bnn.run
+/tfidf_bnnbnn.run
+/tfidf_lnc_ltn.run
