@@ -167,15 +167,18 @@ public class TFIDF_bnn_bnn {
 				int curDocId = docIds.next();
 				int score = doc.get(curDocId);
 				DocResult tmsRes = new DocResult(curDocId, score);
+				
+				
 				queue.add(tmsRes);
 			}
 			
 			int count = 0;
 			DocResult cur;
 			while((cur = queue.poll()) != null && count++ < 100) {
+				
 //				String rank = Integer.toString(count);
 				String line = cur.docId + " Q0 " + indexSearcher.doc(cur.docId).getField("paraid").stringValue() + " " + count + " " + cur.score + " " + "team1-tfidf_bnn_bnn";
-
+				
 				writer.write(line + '\n');
 			}
 		}

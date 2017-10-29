@@ -43,7 +43,7 @@ public class QueryParagraphs {
 	private boolean customScore = false;
 
 	// directory structure..
-	static final private String INDEX_DIRECTORY = "index";
+	static final String INDEX_DIRECTORY = "index";
 	static final private String Cbor_FILE = "test200.cbor/train.test200.cbor.paragraphs";
 	static final private String Cbor_OUTLINE = "test200.cbor/train.test200.cbor.outlines";
 	static final private String OUTPUT_DIR = "output";
@@ -60,6 +60,7 @@ public class QueryParagraphs {
 		}
 		iw.close();
 	}
+	
 
 	private void indexPara(IndexWriter iw, Data.Paragraph para)
 			throws IOException {
@@ -118,7 +119,7 @@ public class QueryParagraphs {
 		TopDocs tds;
 		ScoreDoc[] retDocs;
 
-		System.out.println("Query: " + page.getPageName());
+	//	System.out.println("Query: " + page.getPageName());
 		q = qp.parse(page.getPageName());
 
 		tds = is.search(q, n);
@@ -130,10 +131,7 @@ public class QueryParagraphs {
 			method = "custom-score";
 		for (int i = 0; i < retDocs.length; i++) {
 			d = is.doc(retDocs[i].doc);
-			System.out.println("Doc " + i);
-			System.out.println("Score " + tds.scoreDocs[i].score);
-			System.out.println(d.getField("paraid").stringValue());
-			System.out.println(d.getField("parabody").stringValue() + "\n");
+		
 
 			// runFile string format $queryId Q0 $paragraphId $rank $score
 			// $teamname-$methodname
@@ -209,49 +207,24 @@ public class QueryParagraphs {
 
 		return query;
 	}
-
-	// Function to compute the Spearman_correlation_coefficient
-	public static void calculateCorrelation(
-			HashMap<String, HashMap<String, String>> lucene_data,
-			HashMap<String, HashMap<String, String>> TFIDF_data) {
-		float SpearMan_rank_correlation = (float) 0.0;
-		float d = 0, d_square = 0, rank_correlation = (float) 0.0;
-
-		for (String q : lucene_data.keySet()) {
-			HashMap<String, String> luceneRanks, customRanks;
-			if (TFIDF_data.keySet().contains(q)) {
-				luceneRanks = lucene_data.get(q);
-				customRanks = TFIDF_data.get(q);
-                  int missingFile = 0;
-				int n = luceneRanks.size();
-				if (n == 1) {
-					n = 2;
-				}
-				for (String key : luceneRanks.keySet()) {
-					int num1 = Integer.parseInt(luceneRanks.get(key));
-					if (customRanks.containsKey(key)) {
-						int num2 = Integer.parseInt(customRanks.get(key));
-
-						d = Math.abs(num1 - num2);
-						d_square += (d * d);
-					} else {
-						missingFile++;
-
-						d = Math.abs(num1 - (n + missingFile));
-						d_square += (d * d);
-					}
-				}
-
-				rank_correlation = 1 - (6 * d_square / (n * n * n - n));
-
-				SpearMan_rank_correlation += rank_correlation;
+	
+	//Function copied for Assignent4
+	
+	public void writeRunfile(String filename, ArrayList<String> runfileStrings) {
+		String fullpath = OUTPUT_DIR + "/" + filename;
+		try (FileWriter runfile = new FileWriter(new File(fullpath))) {
+			for (String line : runfileStrings) {
+				runfile.write(line + "\n");
 			}
+
+			runfile.close();
+		} catch (IOException e) {
+			System.out.println("Could not open " + fullpath);
 		}
-		System.out
-				.println("\nSpearman Coefficient  between lucene-Default and TF_IDF data: "
-						+ Math.abs(SpearMan_rank_correlation
-								/ lucene_data.size()) + "\n");
 	}
+
+	
+	
 
 	public static void main(String[] args) {
 		QueryParagraphs q = new QueryParagraphs();
@@ -287,9 +260,7 @@ public class QueryParagraphs {
 				q.rankParas(page, 100, "result-custom.run");
 			}
 
-			TFIDF_anc_apc tfidf_anc_apc = new TFIDF_anc_apc();
-			tfidf_anc_apc.retrieveAllAncApcResults(pagelist, OUTPUT_DIR
-					+ "/tfidf_anc_apc.run");
+			
 
 			TFIDF_bnn_bnn tfidf_bnn_bnn = new TFIDF_bnn_bnn(pagelist, 100);
 			tfidf_bnn_bnn.doScoring();
@@ -297,32 +268,22 @@ public class QueryParagraphs {
 			TFIDF_lnc_ltn tfidf_lnc_ltn = new TFIDF_lnc_ltn(pagelist, 100);
 			tfidf_lnc_ltn.dumpScoresTo(OUTPUT_DIR + "/tfidf_lnc_ltn.run");
 
-			// SpearMan Coefficient Implementation
+			
+			
+			
+			System.out.println("Run LanguageMode_UL...");
+			UnigramLanguageModel UL_ranking = new UnigramLanguageModel(pagelist, 100);
+			q.writeRunfile("U-L.run", UL_ranking.getResults());
 
-			String lucenedefault = "output//result-lucene.run";
-			HashMap<String, HashMap<String, String>> lucene_data = read_dataFile(lucenedefault);
+			// UJM
+			System.out.println("Run LanguageMode_UJM...");
+			LanguageModel_UJM UJM_ranking = new LanguageModel_UJM(pagelist, 100);
+			q.writeRunfile("UJM.run", UJM_ranking.getResults());
 
-			String tfIdf_anc_apc = "output/tfidf_anc_apc.run";
-			HashMap<String, HashMap<String, String>> tfIdf_anc_apcData = read_dataFile(tfIdf_anc_apc);
-
-			String tfidf_lnc_ltn1 = "output/tfidf_lnc_ltn.run";
-			HashMap<String, HashMap<String, String>> lnc_ltnData = read_dataFile(tfidf_lnc_ltn1);
-
-			String tfidf_bnn_bnn1 = "output/tfidf_bnnbnn.run";
-			HashMap<String, HashMap<String, String>> bnn_bnnData = read_dataFile(tfidf_bnn_bnn1);
-
-			System.out
-					.println("Correlation between lucene-default and anc_apc");
-			calculateCorrelation(lucene_data, tfIdf_anc_apcData);
-
-			System.out
-					.println("Correlation between lucene-default and lnc_ltn");
-			calculateCorrelation(lucene_data, lnc_ltnData);
-
-			System.out
-					.println("Correlation between lucene-default and bnn_bnn");
-			calculateCorrelation(lucene_data, bnn_bnnData);
-
+			// UDS
+			System.out.println("Run LanguageMode_UDS...");
+			LanguageModel_UDS UDS_ranking = new LanguageModel_UDS(pagelist);
+		
 		} catch (CborException | IOException | ParseException e) {
 			e.printStackTrace();
 		}
