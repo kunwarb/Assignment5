@@ -150,11 +150,7 @@ class UnigramLanguageModel {
 					int size_of_voc = getSizeOfVocabulary(unigram_list);
 					int size_of_doc = unigram_list.size();
 
-					if(paraId.equals("0760e843e1c62c7aeb1c21f994f05992876aa0a1"))
-					{
-						System.out.println("UL");
-						System.out.println(docBody);
-					}
+					
 
 					if (!results.get(queryId).containsKey(paraId)) {
 						results.get(queryId).put(paraId, 0.0f);
