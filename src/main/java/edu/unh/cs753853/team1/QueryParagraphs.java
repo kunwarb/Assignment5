@@ -154,7 +154,7 @@ public class QueryParagraphs {
 			FileInputStream fis = new FileInputStream(new File(path));
 			for (Data.Page page : DeserializeData.iterableAnnotations(fis)) {
 				pageList.add(page);
-				System.out.println(page.toString());
+				//System.out.println(page.toString());
 
 			}
 		} catch (FileNotFoundException e) {
