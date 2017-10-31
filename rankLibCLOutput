@@ -1,0 +1,133 @@
+
+[+] General Parameters:
+Training data:	/Users/daniellamkin/Desktop/LuceneFolder/train.txt
+Feature vector representation: Dense.
+Ranking method:	Coordinate Ascent
+Feature description file:	Unspecified. All features will be used.
+Train metric:	NDCG@10
+Test metric:	NDCG@10
+Feature normalization: No
+Model file: rankLibResult
+
+[+] Coordinate Ascent's Parameters:
+No. of random restarts: 5
+No. of iterations to search in each direction: 25
+Tolerance: 0.001
+Regularization: No
+
+Reading feature file [/Users/daniellamkin/Desktop/LuceneFolder/train.txt]: 0... Reading feature file [/Users/daniellamkin/Desktop/LuceneFolder/train.txt]... [Done.]            
+(1 ranked lists, 12 entries read)
+Initializing... [Done]
+---------------------------
+Training starts...
+---------------------------
+[+] Random restart #1/5...
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+2       | +0.377   | 0.852   | 
+2       | +1.273   | 0.901   | 
+4       | -0.1314  | 0.9134  | 
+4       | -0.3874  | 0.9218  | 
+4       | -0.8994  | 0.9325  | 
+------------------------------
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+1       | +0.3246  | 0.9469  | 
+1       | +0.5806  | 0.9675  | 
+------------------------------
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+------------------------------
+[+] Random restart #2/5...
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+4       | +0.187   | 0.6979  | 
+4       | -0.005   | 0.8855  | 
+4       | -0.261   | 0.9469  | 
+3       | -0.2637  | 0.9675  | 
+------------------------------
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+------------------------------
+[+] Random restart #3/5...
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+1       | +0.313   | 0.6979  | 
+1       | +0.505   | 0.7328  | 
+4       | -0.3118  | 0.906   | 
+4       | -0.8238  | 0.9469  | 
+2       | +0.1856  | 0.9675  | 
+------------------------------
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+------------------------------
+[+] Random restart #4/5...
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+1       | +0.313   | 0.6979  | 
+1       | +0.505   | 0.7328  | 
+3       | -0.3118  | 0.852   | 
+2       | +0.69    | 0.9134  | 
+4       | -0.0085  | 0.9325  | 
+4       | -0.1365  | 0.9469  | 
+------------------------------
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+------------------------------
+[+] Random restart #5/5...
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+4       | +0.187   | 0.6979  | 
+4       | -0.005   | 0.8855  | 
+4       | -0.261   | 0.9469  | 
+3       | -0.0077  | 0.9675  | 
+------------------------------
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+2       | +0.0702  | 1.0     | 
+------------------------------
+Shuffling features' order... [Done.]
+Optimizing weight vector... 
+------------------------------
+Feature | weight   | NDCG@10 | 
+------------------------------
+------------------------------
+---------------------------------
+Finished sucessfully.
+NDCG@10 on training data: 0.9469
+---------------------------------
+
+Model saved to: rankLibResult
