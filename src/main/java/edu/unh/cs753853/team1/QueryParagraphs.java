@@ -48,6 +48,7 @@ public class QueryParagraphs {
 	static final String INDEX_DIRECTORY = "index";
 	static final private String Cbor_FILE = "test200.cbor/train.test200.cbor.paragraphs";
 	static final private String Cbor_OUTLINE = "test200.cbor/train.test200.cbor.outlines";
+	static final private String Cbor_ARTICLE = "test200.cbor/train.test200.cbor.article.qrels";
 	static final private String OUTPUT_DIR = "output";
 
 	private void indexAllParagraphs() throws CborException, IOException {
@@ -238,6 +239,9 @@ public class QueryParagraphs {
 			String fileName = "feature_data.txt";
 			String contentFile = "paraContent.txt";
 			String print_query = "Brush%20rabbit";
+
+			HashMap<String, HashMap<String, String>> relevance_data = read_dataFile(Cbor_ARTICLE);
+
 			int max_doc_per_query = 10;
 
 			ArrayList<String> writeStringList = new ArrayList<String>();
@@ -287,6 +291,8 @@ public class QueryParagraphs {
 				ArrayList<RankInfo> ujm_list = result_UJM.get(query);
 				ArrayList<RankInfo> uds_list = result_UDS.get(query);
 
+				HashMap<String, String> relevantDocs = relevance_data.get(query);
+
 				ArrayList<String> total_unique_docs = getAllUniqueDocumentId(bnn_list, lnc_list, ul_list, ujm_list,
 						uds_list);
 
@@ -310,8 +316,15 @@ public class QueryParagraphs {
 					float f4 = (float) ((r4 == null) ? 0.0 : (float) 1 / r4.getRank());
 					float f5 = (float) ((r5 == null) ? 0.0 : (float) 1 / r5.getRank());
 
-					String line = "qid:" + query + " 1:" + f1 + " 2:" + f2 + " 3:" + f3 + " 4:" + f4 + " 5:" + f5
-							+ " # DocId:" + id;
+					int relevant = 0;
+					if (relevantDocs.get(id) != null) {
+						if (Integer.parseInt(relevantDocs.get(id)) > 0) {
+							relevant = 1;
+						}
+					}
+
+					String line = relevant + " qid:" + query + " 1:" + f1 + " 2:" + f2 + " 3:" + f3 + " 4:" + f4 + " 5:"
+							+ f5 + " # DocId:" + id;
 					writeStringList.add(line);
 				}
 
