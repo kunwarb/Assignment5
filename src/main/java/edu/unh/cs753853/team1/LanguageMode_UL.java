@@ -41,8 +41,8 @@ class UnigramLanguageModel {
 	IndexSearcher is;
 	IndexReader ir;
 	int maxResults;
-	HashMap<String, HashMap<String, Float>> results;
-	ArrayList<String> runfilestrings;
+	HashMap<String, HashMap<String, DocInfo>> results;
+	HashMap<String, ArrayList<RankInfo>> result_map;
 
 	/***** To compare the document **/
 
@@ -91,11 +91,39 @@ class UnigramLanguageModel {
 	class DocumentResults {
 		String paraId;
 		float score;
+		String content;
 
 		DocumentResults(String pid, float s) {
 			paraId = pid;
 			score = s;
 		}
+
+		DocumentResults(String pid, float s, String contentStr) {
+			paraId = pid;
+			score = s;
+			content = contentStr;
+
+		}
+	}
+
+	class DocInfo {
+		float score;
+		String content;
+
+		DocInfo(float s, String contentStr) {
+			score = s;
+			content = contentStr;
+
+		}
+
+		float getScore() {
+			return score;
+		}
+
+		String getContent() {
+			return content;
+		}
+
 	}
 
 	/**
@@ -105,7 +133,7 @@ class UnigramLanguageModel {
 	 *            the list of pages to rank
 	 */
 	UnigramLanguageModel(ArrayList<Data.Page> pagelist, int numResults) throws IOException {
-		runfilestrings = new ArrayList<>();
+		result_map = new HashMap<>();
 		results = new HashMap<>();
 		maxResults = numResults;
 		qp = new QueryParser("parabody", new StandardAnalyzer());
@@ -132,7 +160,7 @@ class UnigramLanguageModel {
 
 			String queryId = page.getPageId();
 			if (!results.containsKey(queryId)) {
-				results.put(queryId, new HashMap<String, Float>());
+				results.put(queryId, new HashMap<String, DocInfo>());
 			}
 			for (String term : page.getPageName().split(" ")) {
 				Term t = new Term("parabody", term);
@@ -147,45 +175,60 @@ class UnigramLanguageModel {
 					String paraId = doc.get("paraid");
 					String docBody = doc.get("parabody");
 					ArrayList<String> unigram_list = analyzeByUnigram(docBody);
+
 					int size_of_voc = getSizeOfVocabulary(unigram_list);
 					int size_of_doc = unigram_list.size();
 
-					
-
 					if (!results.get(queryId).containsKey(paraId)) {
-						results.get(queryId).put(paraId, 0.0f);
+						results.get(queryId).put(paraId, new DocInfo(0.0f, docBody));
 					}
-					float score = results.get(queryId).get(paraId);
+					float score = results.get(queryId).get(paraId).getScore();
 					score += (float) ((scores[i].score / (size_of_doc + size_of_voc)));
-					results.get(queryId).put(paraId, score);
+					results.get(queryId).put(paraId, new DocInfo(score, docBody));
 				}
 			}
 		}
 
-		for (Map.Entry<String, HashMap<String, Float>> queryResult : results.entrySet()) {
+		for (Map.Entry<String, HashMap<String, DocInfo>> queryResult : results.entrySet()) {
 			String queryId = queryResult.getKey();
-			HashMap<String, Float> paraResults = queryResult.getValue();
+			HashMap<String, DocInfo> paraResults = queryResult.getValue();
 
-			for (Map.Entry<String, Float> paraResult : paraResults.entrySet()) {
+			ArrayList<RankInfo> rankList = new ArrayList<RankInfo>();
+
+			for (Map.Entry<String, DocInfo> paraResult : paraResults.entrySet()) {
 				String paraId = paraResult.getKey();
-				float score = paraResult.getValue();
-				DocumentResults docResult = new DocumentResults(paraId, score);
+				float score = paraResult.getValue().getScore();
+				String content = paraResult.getValue().getContent();
+				DocumentResults docResult = new DocumentResults(paraId, score, content);
 				docQueue.add(docResult);
 			}
 			DocumentResults docResult;
-			int count = 0;
+			int count = 1;
 			while ((docResult = docQueue.poll()) != null) {
-				runfilestrings.add(
-						queryId + "  Q0 " + docResult.paraId + " " + count + " " + docResult.score + " team1-UL-L");
+
+				// runfilestrings.add(
+				// queryId + " Q0 " + docResult.paraId + " " + count + " " +
+				// docResult.score + " team1-UL-L");
+				RankInfo rank = new RankInfo();
+				rank.setQueryStr(queryId);
+				rank.setParaId(docResult.paraId);
+				rank.setRank(count);
+				rank.setScore(docResult.score);
+				rank.setTeam_method_name("team1-UL-L");
+				rank.setParaContent(docResult.content);
+
+				rankList.add(rank);
 				count++;
-				if (count >= 100)
+				if (count > 10)
 					break;
 			}
+			result_map.put(queryId, rankList);
 			docQueue.clear();
+
 		}
 	}
 
-	ArrayList<String> getResults() {
-		return runfilestrings;
+	HashMap<String, ArrayList<RankInfo>> getResults() {
+		return result_map;
 	}
 }

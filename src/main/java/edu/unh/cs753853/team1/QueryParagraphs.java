@@ -9,6 +9,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -49,25 +51,20 @@ public class QueryParagraphs {
 	static final private String OUTPUT_DIR = "output";
 
 	private void indexAllParagraphs() throws CborException, IOException {
-		Directory indexdir = FSDirectory.open((new File(INDEX_DIRECTORY))
-				.toPath());
+		Directory indexdir = FSDirectory.open((new File(INDEX_DIRECTORY)).toPath());
 		IndexWriterConfig conf = new IndexWriterConfig(new StandardAnalyzer());
 		conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 		IndexWriter iw = new IndexWriter(indexdir, conf);
-		for (Data.Paragraph p : DeserializeData
-				.iterableParagraphs(new FileInputStream(new File(Cbor_FILE)))) {
+		for (Data.Paragraph p : DeserializeData.iterableParagraphs(new FileInputStream(new File(Cbor_FILE)))) {
 			this.indexPara(iw, p);
 		}
 		iw.close();
 	}
-	
 
-	private void indexPara(IndexWriter iw, Data.Paragraph para)
-			throws IOException {
+	private void indexPara(IndexWriter iw, Data.Paragraph para) throws IOException {
 		Document paradoc = new Document();
 		paradoc.add(new StringField("paraid", para.getParaId(), Field.Store.YES));
-		paradoc.add(new TextField("parabody", para.getTextOnly(),
-				Field.Store.YES));
+		paradoc.add(new TextField("parabody", para.getTextOnly(), Field.Store.YES));
 		FieldType indexType = new FieldType();
 		indexType.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
 		indexType.setStored(true);
@@ -90,11 +87,9 @@ public class QueryParagraphs {
 	 * @throws IOException
 	 * @throws ParseException
 	 */
-	private void rankParas(Data.Page page, int n, String filename)
-			throws IOException, ParseException {
+	private void rankParas(Data.Page page, int n, String filename) throws IOException, ParseException {
 		if (is == null) {
-			is = new IndexSearcher(DirectoryReader.open(FSDirectory
-					.open((new File(INDEX_DIRECTORY).toPath()))));
+			is = new IndexSearcher(DirectoryReader.open(FSDirectory.open((new File(INDEX_DIRECTORY).toPath()))));
 		}
 
 		if (customScore) {
@@ -119,7 +114,7 @@ public class QueryParagraphs {
 		TopDocs tds;
 		ScoreDoc[] retDocs;
 
-	//	System.out.println("Query: " + page.getPageName());
+		// System.out.println("Query: " + page.getPageName());
 		q = qp.parse(page.getPageName());
 
 		tds = is.search(q, n);
@@ -131,18 +126,15 @@ public class QueryParagraphs {
 			method = "custom-score";
 		for (int i = 0; i < retDocs.length; i++) {
 			d = is.doc(retDocs[i].doc);
-		
 
 			// runFile string format $queryId Q0 $paragraphId $rank $score
 			// $teamname-$methodname
-			String runFileString = page.getPageId() + " Q0 "
-					+ d.getField("paraid").stringValue() + " " + i + " "
+			String runFileString = page.getPageId() + " Q0 " + d.getField("paraid").stringValue() + " " + i + " "
 					+ tds.scoreDocs[i].score + " team1-" + method;
 			runStringsForPage.add(runFileString);
 		}
 
-		FileWriter fw = new FileWriter(QueryParagraphs.OUTPUT_DIR + "/"
-				+ filename, true);
+		FileWriter fw = new FileWriter(QueryParagraphs.OUTPUT_DIR + "/" + filename, true);
 		for (String runString : runStringsForPage)
 			fw.write(runString + "\n");
 		fw.close();
@@ -154,7 +146,7 @@ public class QueryParagraphs {
 			FileInputStream fis = new FileInputStream(new File(path));
 			for (Data.Page page : DeserializeData.iterableAnnotations(fis)) {
 				pageList.add(page);
-				//System.out.println(page.toString());
+				// System.out.println(page.toString());
 
 			}
 		} catch (FileNotFoundException e) {
@@ -168,8 +160,7 @@ public class QueryParagraphs {
 	}
 
 	// Function to read run file and store in hashmap inside HashMap
-	public static HashMap<String, HashMap<String, String>> read_dataFile(
-			String file_name) {
+	public static HashMap<String, HashMap<String, String>> read_dataFile(String file_name) {
 		HashMap<String, HashMap<String, String>> query = new HashMap<String, HashMap<String, String>>();
 
 		File f = new File(file_name);
@@ -207,9 +198,9 @@ public class QueryParagraphs {
 
 		return query;
 	}
-	
-	//Function copied for Assignent4
-	
+
+	// Function copied for Assignent4
+
 	public void writeRunfile(String filename, ArrayList<String> runfileStrings) {
 		String fullpath = OUTPUT_DIR + "/" + filename;
 		try (FileWriter runfile = new FileWriter(new File(fullpath))) {
@@ -223,70 +214,194 @@ public class QueryParagraphs {
 		}
 	}
 
-	
-	
+	public void writeDataFile(String filename, ArrayList<String> datafileString) {
+		String fullpath = OUTPUT_DIR + "/" + filename;
+		try (FileWriter runfile = new FileWriter(new File(fullpath))) {
+			for (String line : datafileString) {
+				runfile.write(line + "\n");
+			}
+
+			runfile.close();
+		} catch (IOException e) {
+			System.out.println("Could not open " + fullpath);
+		}
+	}
 
 	public static void main(String[] args) {
 		QueryParagraphs q = new QueryParagraphs();
-		int topSearch = 100;
-		String[] queryArr = { "power nap benefits",
-				"whale vocalization production of sound",
-				"pokemon puzzle league" };
 
 		try {
 			q.indexAllParagraphs();
 
-			ArrayList<Data.Page> pagelist = q
-					.getPageListFromPath(QueryParagraphs.Cbor_OUTLINE);
+			ArrayList<Data.Page> pagelist = q.getPageListFromPath(QueryParagraphs.Cbor_OUTLINE);
 
-			File f = new File(OUTPUT_DIR + "/result-lucene.run");
-			if (f.exists()) {
-				FileWriter createNewFile = new FileWriter(f);
-				createNewFile.write("");
-			}
-			for (Data.Page page : pagelist) {
+			String fileName = "feature_data.txt";
+			String contentFile = "paraContent.txt";
+			String print_query = "Brush%20rabbit";
+			int max_doc_per_query = 10;
 
-				q.rankParas(page, 100, "result-lucene.run");
-			}
+			ArrayList<String> writeStringList = new ArrayList<String>();
 
-			q.customScore(true);
-			f = new File(OUTPUT_DIR + "/result-custom.run");
-			if (f.exists()) {
-				FileWriter createNewFile = new FileWriter(f);
-				createNewFile.write("");
-			}
-			for (Data.Page page : pagelist) {
+			HashMap<String, ArrayList<RankInfo>> result_bnn_bnn = new HashMap<>();
 
-				q.rankParas(page, 100, "result-custom.run");
-			}
+			HashMap<String, ArrayList<RankInfo>> result_lnc_ltn = new HashMap<>();
 
-			
+			HashMap<String, ArrayList<RankInfo>> result_UL = new HashMap<>();
 
-			TFIDF_bnn_bnn tfidf_bnn_bnn = new TFIDF_bnn_bnn(pagelist, 100);
-			tfidf_bnn_bnn.doScoring();
+			HashMap<String, ArrayList<RankInfo>> result_UJM = new HashMap<>();
 
-			TFIDF_lnc_ltn tfidf_lnc_ltn = new TFIDF_lnc_ltn(pagelist, 100);
-			tfidf_lnc_ltn.dumpScoresTo(OUTPUT_DIR + "/tfidf_lnc_ltn.run");
+			HashMap<String, ArrayList<RankInfo>> result_UDS = new HashMap<>();
 
-			
-			
-			
+			/*
+			 * bnn_bnn:1, lnc_ltn:2, UL:3, UJM:4, UDS:5
+			 */
+
+			// bnn.bnn
+			TFIDF_bnn_bnn tfidf_bnn_bnn = new TFIDF_bnn_bnn(pagelist, max_doc_per_query);
+			result_bnn_bnn = tfidf_bnn_bnn.getResult();
+
+			// lnc.ltn
+			TFIDF_lnc_ltn tfidf_lnc_ltn = new TFIDF_lnc_ltn(pagelist, max_doc_per_query);
+			result_lnc_ltn = tfidf_lnc_ltn.getResultMap();
+
+			// UL
 			System.out.println("Run LanguageMode_UL...");
-			UnigramLanguageModel UL_ranking = new UnigramLanguageModel(pagelist, 100);
-			q.writeRunfile("U-L.run", UL_ranking.getResults());
+			UnigramLanguageModel UL_ranking = new UnigramLanguageModel(pagelist, max_doc_per_query);
+			result_UL = UL_ranking.getResults();
 
 			// UJM
 			System.out.println("Run LanguageMode_UJM...");
-			LanguageModel_UJM UJM_ranking = new LanguageModel_UJM(pagelist, 100);
-			q.writeRunfile("UJM.run", UJM_ranking.getResults());
+			LanguageModel_UJM UJM_ranking = new LanguageModel_UJM(pagelist, max_doc_per_query);
+			result_UJM = UJM_ranking.getResults();
 
 			// UDS
 			System.out.println("Run LanguageMode_UDS...");
 			LanguageModel_UDS UDS_ranking = new LanguageModel_UDS(pagelist);
-		
+			result_UDS = UDS_ranking.getResult();
+
+			for (Data.Page page : pagelist) {
+				String query = page.getPageId();
+				ArrayList<RankInfo> bnn_list = result_bnn_bnn.get(query);
+				ArrayList<RankInfo> lnc_list = result_lnc_ltn.get(query);
+				ArrayList<RankInfo> ul_list = result_UL.get(query);
+				ArrayList<RankInfo> ujm_list = result_UJM.get(query);
+				ArrayList<RankInfo> uds_list = result_UDS.get(query);
+
+				ArrayList<String> total_unique_docs = getAllUniqueDocumentId(bnn_list, lnc_list, ul_list, ujm_list,
+						uds_list);
+
+				System.out.println("Total :" + total_unique_docs.size() + " docs for Query: " + query);
+				// System.out.println(bnn_list.size() + " = " + lnc_list.size()
+				// + " = " + ul_list.size() + " = "
+				// + ujm_list.size() + " = " + uds_list.size());
+				/*
+				 * bnn_bnn:1, lnc_ltn:2, UL:3, UJM:4, UDS:5
+				 */
+				for (String id : total_unique_docs) {
+					RankInfo r1 = getRankInfoById(id, bnn_list);
+					RankInfo r2 = getRankInfoById(id, lnc_list);
+					RankInfo r3 = getRankInfoById(id, ul_list);
+					RankInfo r4 = getRankInfoById(id, ujm_list);
+					RankInfo r5 = getRankInfoById(id, uds_list);
+
+					float f1 = (float) ((r1 == null) ? 0.0 : (float) 1 / r1.getRank());
+					float f2 = (float) ((r2 == null) ? 0.0 : (float) 1 / r2.getRank());
+					float f3 = (float) ((r3 == null) ? 0.0 : (float) 1 / r3.getRank());
+					float f4 = (float) ((r4 == null) ? 0.0 : (float) 1 / r4.getRank());
+					float f5 = (float) ((r5 == null) ? 0.0 : (float) 1 / r5.getRank());
+
+					String line = "qid:" + query + " 1:" + f1 + " 2:" + f2 + " 3:" + f3 + " 4:" + f4 + " 5:" + f5
+							+ " # DocId:" + id;
+					writeStringList.add(line);
+				}
+
+				if (query.equalsIgnoreCase(print_query)) {
+					System.out.println("Print paragraph contents for Query: " + print_query);
+					ArrayList<String> strLines = new ArrayList<>();
+					if (bnn_list != null && bnn_list.size() > 0) {
+						strLines.add("Reuslt for bnn.bnn >>>>>>>>>>");
+						strLines.addAll(getContentResult(bnn_list));
+						strLines.add(" ");
+					}
+					if (lnc_list != null && lnc_list.size() > 0) {
+						strLines.add("Reuslt for lnc.ltc >>>>>>>>>>");
+						strLines.addAll(getContentResult(lnc_list));
+						strLines.add(" ");
+					}
+					if (ul_list != null && ul_list.size() > 0) {
+						strLines.add("Reuslt for UL >>>>>>>>>>");
+						strLines.addAll(getContentResult(ul_list));
+						strLines.add(" ");
+					}
+					if (ujm_list != null && ujm_list.size() > 0) {
+						strLines.add("Reuslt for UJM >>>>>>>>>>");
+						strLines.addAll(getContentResult(ujm_list));
+						strLines.add(" ");
+					}
+					if (uds_list != null && uds_list.size() > 0) {
+						strLines.add("Reuslt for UDS >>>>>>>>>>");
+						strLines.addAll(getContentResult(uds_list));
+						strLines.add(" ");
+					}
+
+					q.writeDataFile(contentFile, strLines);
+				}
+
+				q.writeDataFile(fileName, writeStringList);
+			}
+
 		} catch (CborException | IOException | ParseException e) {
 			e.printStackTrace();
 		}
 
+	}
+
+	public static ArrayList<String> getAllUniqueDocumentId(ArrayList<RankInfo> bnn, ArrayList<RankInfo> lnc,
+			ArrayList<RankInfo> ul, ArrayList<RankInfo> ujm, ArrayList<RankInfo> uds) {
+
+		ArrayList<String> total_documents = new ArrayList<String>();
+		ArrayList<RankInfo> total_rankInfo = new ArrayList<RankInfo>();
+
+		total_rankInfo.addAll(bnn);
+		total_rankInfo.addAll(lnc);
+		total_rankInfo.addAll(ul);
+		total_rankInfo.addAll(ujm);
+		total_rankInfo.addAll(uds);
+
+		for (RankInfo rank : total_rankInfo) {
+			total_documents.add(rank.getParaId());
+		}
+
+		Set<String> hs = new HashSet<>();
+
+		hs.addAll(total_documents);
+		total_documents.clear();
+		total_documents.addAll(hs);
+
+		return total_documents;
+	}
+
+	private static RankInfo getRankInfoById(String id, ArrayList<RankInfo> list) {
+		if (list == null || list.isEmpty()) {
+			return null;
+		}
+		for (RankInfo rank : list) {
+			if (rank.getParaId().equalsIgnoreCase(id)) {
+				return rank;
+			}
+		}
+		return null;
+	}
+
+	private static ArrayList<String> getContentResult(ArrayList<RankInfo> list) {
+		ArrayList<String> result = new ArrayList<>();
+		if (list != null && list.size() > 0) {
+			for (RankInfo rank : list) {
+				String line = rank.getRank() + " : " + rank.getParaContent();
+				result.add(line);
+			}
+		}
+
+		return result;
 	}
 }
