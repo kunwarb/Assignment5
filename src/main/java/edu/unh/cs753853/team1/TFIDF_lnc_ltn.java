@@ -1,7 +1,6 @@
 package edu.unh.cs753853.team1;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,7 +47,7 @@ public class TFIDF_lnc_ltn {
 	private int numDocs = 10;
 
 	// Map of queries to map of Documents to scores for that query
-	private HashMap<Query, ArrayList<DocumentResults>> queryResults;
+	private HashMap<String, ArrayList<DocumentResults>> queryResults;
 
 	TFIDF_lnc_ltn(ArrayList<Data.Page> pl, int n) throws ParseException, IOException {
 
@@ -83,7 +82,7 @@ public class TFIDF_lnc_ltn {
 	 * @throws IOException
 	 * @throws ParseException
 	 */
-	public void dumpScoresTo(String runfile) throws IOException, ParseException {
+	public HashMap<String, ArrayList<RankInfo>> getResultMap() throws IOException, ParseException {
 		queryResults = new HashMap<>(); // Maps query to map of Documents with
 										// TF-IDF score
 
@@ -167,6 +166,7 @@ public class TFIDF_lnc_ltn {
 					dResults.paragraphId(doc.getField("paraid").stringValue());
 					dResults.teamName("team1");
 					dResults.methodName("tf.idf_lnc_ltn");
+					dResults.setContent(doc.getField("parabody").stringValue());
 					docMap.put(doc, dResults);
 
 					// Store score for later use
@@ -212,19 +212,37 @@ public class TFIDF_lnc_ltn {
 			}
 
 			// Map our Documents and scores to the corresponding query
-			queryResults.put(q, docResults);
+			queryResults.put(qid, docResults);
 		}
 
-		System.out.println("TFIDF_lnc_ltn writing results to: \t\t" + runfile);
-		FileWriter runfileWriter = new FileWriter(new File(runfile));
-		for (Map.Entry<Query, ArrayList<DocumentResults>> results : queryResults.entrySet()) {
+		HashMap<String, ArrayList<RankInfo>> result_map = new HashMap<>();
+
+		// System.out.println("TFIDF_lnc_ltn writing results to: \t\t" +
+		// runfile);
+		// FileWriter runfileWriter = new FileWriter(new File(runfile));
+		for (Map.Entry<String, ArrayList<DocumentResults>> results : queryResults.entrySet()) {
 			ArrayList<DocumentResults> list = results.getValue();
+			String queryStr = results.getKey();
+			ArrayList<RankInfo> ranklist = new ArrayList<RankInfo>();
 			for (int i = 0; i < list.size() && i < 10; i++) {
 				DocumentResults dr = list.get(i);
-				runfileWriter.write(dr.getRunfileString());
+				// runfileWriter.write(dr.getRunfileString());
+				RankInfo rank = new RankInfo();
+				rank.setParaId(dr.getParagraphId());
+				rank.setQueryStr(queryStr);
+				rank.setRank(dr.getRank());
+				rank.setScore(dr.getScore());
+				rank.setTeam_method_name(dr.getTeamName() + "-" + dr.getMethodName());
+				rank.setParaContent(dr.getContent());
+
+				ranklist.add(rank);
 			}
+
+			result_map.put(queryStr, ranklist);
 		}
-		runfileWriter.close();
+		// runfileWriter.close();
+
+		return result_map;
 
 	}
 

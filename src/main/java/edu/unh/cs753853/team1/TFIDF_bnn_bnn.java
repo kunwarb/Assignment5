@@ -111,7 +111,7 @@ public class TFIDF_bnn_bnn {
 	 * 
 	 * @throws ParseException
 	 */
-	public ArrayList<String> getResult() throws ParseException, IOException {
+	public HashMap<String, ArrayList<RankInfo>> getResult() throws ParseException, IOException {
 		queryResults = new HashMap<>();
 
 		HashMap<String, HashMap<Integer, Integer>> results = new HashMap<>();
@@ -147,6 +147,7 @@ public class TFIDF_bnn_bnn {
 			results.put(qid, docScores);
 		}
 		// writeResults(results);
+		// return getResultString(results);
 		return getResultString(results);
 
 	}
@@ -190,9 +191,11 @@ public class TFIDF_bnn_bnn {
 
 	}
 
-	private ArrayList<String> getResultString(HashMap<String, HashMap<Integer, Integer>> map) throws IOException {
+	private HashMap<String, ArrayList<RankInfo>> getResultString(HashMap<String, HashMap<Integer, Integer>> map)
+			throws IOException {
 
 		ArrayList<String> resultList = new ArrayList<String>();
+		HashMap<String, ArrayList<RankInfo>> resultMap = new HashMap<>();
 
 		Set<String> keys = map.keySet();
 		Iterator<String> iter = keys.iterator();
@@ -202,6 +205,8 @@ public class TFIDF_bnn_bnn {
 			String q = curQuery.toString();
 			Set<Integer> tmp = doc.keySet();
 			Iterator<Integer> docIds = tmp.iterator();
+
+			ArrayList<RankInfo> rankList = new ArrayList<RankInfo>();
 
 			PriorityQueue<DocResult> queue = new PriorityQueue<>(new DocComparator());
 			while (docIds.hasNext()) {
@@ -214,15 +219,27 @@ public class TFIDF_bnn_bnn {
 			int count = 0;
 			DocResult cur;
 			while ((cur = queue.poll()) != null && count++ < 10) {
+				RankInfo rank = new RankInfo();
+				rank.setDocId(cur.docId);
+				rank.setParaId(indexSearcher.doc(cur.docId).getField("paraid").stringValue());
+				rank.setRank(count);
+				rank.setScore(cur.score);
+				rank.setQueryStr(curQuery);
+				rank.setParaContent(indexSearcher.doc(cur.docId).getField("parabody").stringValue());
+				rank.setTeam_method_name("team1-tfidf_bnn_bnn");
 
-				// String rank = Integer.toString(count);
-				String line = curQuery + " Q0 " + indexSearcher.doc(cur.docId).getField("paraid").stringValue() + " "
-						+ count + " " + cur.score + " " + "team1-tfidf_bnn_bnn";
+				// // String rank = Integer.toString(count);
+				// String line = curQuery + " Q0 " +
+				// indexSearcher.doc(cur.docId).getField("paraid").stringValue()
+				// + " "
+				// + count + " " + cur.score + " " + "team1-tfidf_bnn_bnn";
 
-				resultList.add(line);
+				rankList.add(rank);
 			}
+
+			resultMap.put(curQuery, rankList);
 		}
-		return resultList;
+		return resultMap;
 	}
 
 }

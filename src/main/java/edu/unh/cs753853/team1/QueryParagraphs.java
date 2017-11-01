@@ -229,15 +229,15 @@ public class QueryParagraphs {
 
 	public static void main(String[] args) {
 		QueryParagraphs q = new QueryParagraphs();
-		int topSearch = 100;
-		String[] queryArr = { "power nap benefits", "whale vocalization production of sound", "pokemon puzzle league" };
 
 		try {
 			q.indexAllParagraphs();
 
 			ArrayList<Data.Page> pagelist = q.getPageListFromPath(QueryParagraphs.Cbor_OUTLINE);
 
-			String fileName = OUTPUT_DIR + "feature_data.txt";
+			String fileName = "feature_data.txt";
+			String contentFile = "paraContent.txt";
+			String print_query = "Brush%20rabbit";
 			int max_doc_per_query = 10;
 
 			ArrayList<String> writeStringList = new ArrayList<String>();
@@ -256,30 +256,28 @@ public class QueryParagraphs {
 			 * bnn_bnn:1, lnc_ltn:2, UL:3, UJM:4, UDS:5
 			 */
 
-			// TFIDF_bnn_bnn tfidf_bnn_bnn = new TFIDF_bnn_bnn(pagelist,
-			// max_doc_per_query);
-			// ArrayList<String> result_bnn_bnn = tfidf_bnn_bnn.getResult();
-			// q.writeRunfile("bnn_bnn.run", result_bnn_bnn);
+			// bnn.bnn
+			TFIDF_bnn_bnn tfidf_bnn_bnn = new TFIDF_bnn_bnn(pagelist, max_doc_per_query);
+			result_bnn_bnn = tfidf_bnn_bnn.getResult();
 
-			// Wrong number for top docs.
-			TFIDF_lnc_ltn tfidf_lnc_ltn = new TFIDF_lnc_ltn(pagelist, 10);
-			tfidf_lnc_ltn.dumpScoresTo(OUTPUT_DIR + "/tfidf_lnc_ltn.run");
+			// lnc.ltn
+			TFIDF_lnc_ltn tfidf_lnc_ltn = new TFIDF_lnc_ltn(pagelist, max_doc_per_query);
+			result_lnc_ltn = tfidf_lnc_ltn.getResultMap();
 
-			// Wrong
-			// System.out.println("Run LanguageMode_UL...");
-			// UnigramLanguageModel UL_ranking = new
-			// UnigramLanguageModel(pagelist, max_doc_per_query);
-			// q.writeRunfile("U-L.run", UL_ranking.getResults());
-			//
-			// // UJM
-			// System.out.println("Run LanguageMode_UJM...");
-			// LanguageModel_UJM UJM_ranking = new LanguageModel_UJM(pagelist,
-			// max_doc_per_query);
-			// q.writeRunfile("UJM.run", UJM_ranking.getResults());
-			//
-			// // UDS this will return top 10 docs.
-			// System.out.println("Run LanguageMode_UDS...");
-			// LanguageModel_UDS UDS_ranking = new LanguageModel_UDS(pagelist);
+			// UL
+			System.out.println("Run LanguageMode_UL...");
+			UnigramLanguageModel UL_ranking = new UnigramLanguageModel(pagelist, max_doc_per_query);
+			result_UL = UL_ranking.getResults();
+
+			// UJM
+			System.out.println("Run LanguageMode_UJM...");
+			LanguageModel_UJM UJM_ranking = new LanguageModel_UJM(pagelist, max_doc_per_query);
+			result_UJM = UJM_ranking.getResults();
+
+			// UDS
+			System.out.println("Run LanguageMode_UDS...");
+			LanguageModel_UDS UDS_ranking = new LanguageModel_UDS(pagelist);
+			result_UDS = UDS_ranking.getResult();
 
 			for (Data.Page page : pagelist) {
 				String query = page.getPageId();
@@ -292,6 +290,10 @@ public class QueryParagraphs {
 				ArrayList<String> total_unique_docs = getAllUniqueDocumentId(bnn_list, lnc_list, ul_list, ujm_list,
 						uds_list);
 
+				System.out.println("Total :" + total_unique_docs.size() + " docs for Query: " + query);
+				// System.out.println(bnn_list.size() + " = " + lnc_list.size()
+				// + " = " + ul_list.size() + " = "
+				// + ujm_list.size() + " = " + uds_list.size());
 				/*
 				 * bnn_bnn:1, lnc_ltn:2, UL:3, UJM:4, UDS:5
 				 */
@@ -302,17 +304,50 @@ public class QueryParagraphs {
 					RankInfo r4 = getRankInfoById(id, ujm_list);
 					RankInfo r5 = getRankInfoById(id, uds_list);
 
-					float f1 = (float) ((r1 == null) ? 0.0 : 1 / r1.getRank());
-					float f2 = (float) ((r2 == null) ? 0.0 : 1 / r2.getRank());
-					float f3 = (float) ((r3 == null) ? 0.0 : 1 / r3.getRank());
-					float f4 = (float) ((r4 == null) ? 0.0 : 1 / r4.getRank());
-					float f5 = (float) ((r5 == null) ? 0.0 : 1 / r5.getRank());
+					float f1 = (float) ((r1 == null) ? 0.0 : (float) 1 / r1.getRank());
+					float f2 = (float) ((r2 == null) ? 0.0 : (float) 1 / r2.getRank());
+					float f3 = (float) ((r3 == null) ? 0.0 : (float) 1 / r3.getRank());
+					float f4 = (float) ((r4 == null) ? 0.0 : (float) 1 / r4.getRank());
+					float f5 = (float) ((r5 == null) ? 0.0 : (float) 1 / r5.getRank());
 
 					String line = "qid:" + query + " 1:" + f1 + " 2:" + f2 + " 3:" + f3 + " 4:" + f4 + " 5:" + f5
-							+ " #";
+							+ " # DocId:" + id;
 					writeStringList.add(line);
 				}
 
+				if (query.equalsIgnoreCase(print_query)) {
+					System.out.println("Print paragraph contents for Query: " + print_query);
+					ArrayList<String> strLines = new ArrayList<>();
+					if (bnn_list != null && bnn_list.size() > 0) {
+						strLines.add("Reuslt for bnn.bnn >>>>>>>>>>");
+						strLines.addAll(getContentResult(bnn_list));
+						strLines.add(" ");
+					}
+					if (lnc_list != null && lnc_list.size() > 0) {
+						strLines.add("Reuslt for lnc.ltc >>>>>>>>>>");
+						strLines.addAll(getContentResult(lnc_list));
+						strLines.add(" ");
+					}
+					if (ul_list != null && ul_list.size() > 0) {
+						strLines.add("Reuslt for UL >>>>>>>>>>");
+						strLines.addAll(getContentResult(ul_list));
+						strLines.add(" ");
+					}
+					if (ujm_list != null && ujm_list.size() > 0) {
+						strLines.add("Reuslt for UJM >>>>>>>>>>");
+						strLines.addAll(getContentResult(ujm_list));
+						strLines.add(" ");
+					}
+					if (uds_list != null && uds_list.size() > 0) {
+						strLines.add("Reuslt for UDS >>>>>>>>>>");
+						strLines.addAll(getContentResult(uds_list));
+						strLines.add(" ");
+					}
+
+					q.writeDataFile(contentFile, strLines);
+				}
+
+				q.writeDataFile(fileName, writeStringList);
 			}
 
 		} catch (CborException | IOException | ParseException e) {
@@ -347,12 +382,26 @@ public class QueryParagraphs {
 	}
 
 	private static RankInfo getRankInfoById(String id, ArrayList<RankInfo> list) {
-
+		if (list == null || list.isEmpty()) {
+			return null;
+		}
 		for (RankInfo rank : list) {
 			if (rank.getParaId().equalsIgnoreCase(id)) {
 				return rank;
 			}
 		}
 		return null;
+	}
+
+	private static ArrayList<String> getContentResult(ArrayList<RankInfo> list) {
+		ArrayList<String> result = new ArrayList<>();
+		if (list != null && list.size() > 0) {
+			for (RankInfo rank : list) {
+				String line = rank.getRank() + " : " + rank.getParaContent();
+				result.add(line);
+			}
+		}
+
+		return result;
 	}
 }

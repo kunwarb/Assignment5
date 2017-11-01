@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -89,6 +90,7 @@ public class LanguageModel_UDS {
 	static final private String OUTPUT_DIRECTORY = "output";
 	static final private String outputName = "results_uds.run";
 	private final int numDocs = 10;
+	private HashMap<String, ArrayList<RankInfo>> result_map;
 
 	/*
 	 * returns IndexReader at path
@@ -123,29 +125,34 @@ public class LanguageModel_UDS {
 
 		try {
 			ArrayList<RunFileString> resultLines = new ArrayList<>();
+			result_map = new HashMap<>();
 			for (Data.Page page : pagelist) {
 				String queryStr = page.getPageId();
-				ArrayList<RunFileString> res = getRanked(queryStr);
-				resultLines.addAll(res);
+				ArrayList<RankInfo> rankList = getRanked(queryStr);
+
+				result_map.put(queryStr, rankList);
 			}
-			writeArrayToFile(resultLines);
+			// writeArrayToFile(resultLines);
 
 		} catch (java.io.IOException e) {
 			e.printStackTrace();
 		}
 	}
 
+	public HashMap<String, ArrayList<RankInfo>> getResult() {
+		return result_map;
+	}
+
 	/*
 	 * gets result array of size 100 for a given query.
 	 */
-	private ArrayList<RunFileString> getRanked(String query) throws IOException {
+	private ArrayList<RankInfo> getRanked(String query) throws IOException {
 		IndexSearcher indexSearcher = new IndexSearcher(getInedexReader(INDEX_DIRECTORY));
 		indexSearcher.setSimilarity(getSimilarity());
 
 		QueryParser parser = new QueryParser("parabody", new StandardAnalyzer());
 
-		ArrayList<RunFileString> ret = new ArrayList<>();
-
+		ArrayList<RankInfo> rankList = new ArrayList<RankInfo>();
 		try {
 			Query q = parser.parse(query);
 			TopDocs topDocs = indexSearcher.search(q, numDocs);
@@ -155,19 +162,26 @@ public class LanguageModel_UDS {
 				String docId = doc.get("paraid");
 				float score = hits[i].score;
 
-				if (docId.equals("3062422698c70396fe4505a60c680d50022a3314")) {
-					System.out.println("UDS");
-					System.out.println(doc.get("parabody"));
-				}
+				// if (docId.equals("3062422698c70396fe4505a60c680d50022a3314"))
+				// {
+				// System.out.println("UDS");
+				// System.out.println(doc.get("parabody"));
+				// }
 
-				RunFileString tmp = new RunFileString(query, docId, i, score);
-				ret.add(tmp);
+				RankInfo rank = new RankInfo();
+				rank.setQueryStr(query);
+				rank.setParaId(docId);
+				rank.setRank(i + 1);
+				rank.setScore(score);
+				rank.setTeam_method_name("team1-DS-Dirichlet");
+				rank.setParaContent(doc.get("parabody"));
+				rankList.add(rank);
 			}
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
 
-		return ret;
+		return rankList;
 	}
 
 	/*
